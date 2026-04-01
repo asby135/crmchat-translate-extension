@@ -1,62 +1,44 @@
 // CRMChat Translator - Service Worker (Background)
-// Handles translation API calls from content scripts
+// Routes translation requests through the Cloudflare Worker proxy
 
-const GOOGLE_TRANSLATE_API = 'https://translation.googleapis.com/language/translate/v2';
+const TRANSLATE_API = 'https://crmchat-translate.PLACEHOLDER.workers.dev/translate';
 
-// Default settings
+// Default settings (no API key needed — proxy handles it)
 const DEFAULT_SETTINGS = {
-  apiKey: '',
   targetLanguage: 'en',
   outboundLanguage: 'ru',
   autoTranslateInbound: true,
   enabled: true,
 };
 
-// Get settings from storage
 async function getSettings() {
-  const result = await chrome.storage.sync.get(DEFAULT_SETTINGS);
-  return result;
+  return chrome.storage.sync.get(DEFAULT_SETTINGS);
 }
 
-// Translate text using Google Cloud Translation API
-async function translateText(text, targetLang, apiKey) {
+async function translateText(text, targetLang) {
   if (!text || !text.trim()) {
     return { translatedText: text, detectedLanguage: '' };
   }
 
-  if (!apiKey) {
-    throw new Error('API key not configured. Open extension settings to add your Google Cloud Translation API key.');
-  }
-
-  const response = await fetch(`${GOOGLE_TRANSLATE_API}?key=${apiKey}`, {
+  const response = await fetch(TRANSLATE_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      q: text,
-      target: targetLang,
-      format: 'text',
-    }),
+    body: JSON.stringify({ text, targetLanguage: targetLang }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error?.error?.message || `Translation API error: ${response.status}`);
+    throw new Error(error?.error || `Translation error: ${response.status}`);
   }
 
-  const data = await response.json();
-  const translation = data.data.translations[0];
-
-  return {
-    translatedText: translation.translatedText,
-    detectedLanguage: translation.detectedSourceLanguage || '',
-  };
+  return response.json();
 }
 
 // Handle messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'translate') {
     handleTranslate(message, sendResponse);
-    return true; // Keep channel open for async response
+    return true;
   }
 
   if (message.type === 'getSettings') {
@@ -67,7 +49,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'saveSettings') {
     chrome.storage.sync.set(message.settings).then(() => {
       sendResponse({ success: true });
-      // Notify all content scripts of settings change
       chrome.tabs.query({}, (tabs) => {
         for (const tab of tabs) {
           chrome.tabs.sendMessage(tab.id, {
@@ -94,16 +75,16 @@ async function handleTranslate(message, sendResponse) {
       ? settings.outboundLanguage
       : settings.targetLanguage;
 
-    const result = await translateText(message.text, targetLang, settings.apiKey);
+    const result = await translateText(message.text, targetLang);
     sendResponse(result);
   } catch (err) {
     sendResponse({ error: err.message });
   }
 }
 
-// On install, open options
+// On install, open popup so user can configure language preferences
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    chrome.action.openPopup?.() || chrome.runtime.openOptionsPage?.();
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') });
   }
 });
