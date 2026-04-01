@@ -1,0 +1,109 @@
+/* CRMChat Translator - Injected Styles */
+
+/* ── Inbound translation text ──────────────────────────── */
+.crm-translation {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: #5B8FCA;
+  font-size: 0.875em;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Dark theme support */
+html.theme-dark .crm-translation,
+body.theme-dark .crm-translation {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: #6BAFEF;
+}
+
+/* ── Outbound translate button ─────────────────────────── */
+.crm-translate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #707579;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s, background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.crm-translate-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #3390ec;
+}
+
+.crm-translate-btn:active {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.crm-translate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crm-translate-btn.loading svg {
+  animation: crm-spin 0.8s linear infinite;
+}
+
+.crm-translate-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Dark theme */
+html.theme-dark .crm-translate-btn,
+body.theme-dark .crm-translate-btn {
+  color: #aaaaaa;
+}
+
+html.theme-dark .crm-translate-btn:hover,
+body.theme-dark .crm-translate-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #8774e1;
+}
+
+/* ── Toast notification ────────────────────────────────── */
+.crm-translate-toast {
+  position: fixed;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 10000;
+  animation: crm-fadeIn 0.2s ease;
+  max-width: 80%;
+  text-align: center;
+}
+
+.crm-translate-toast.hiding {
+  animation: crm-fadeOut 0.3s ease forwards;
+}
+
+/* ── Animations ────────────────────────────────────────── */
+@keyframes crm-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes crm-fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(0.5rem); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes crm-fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
