@@ -1,6 +1,6 @@
 // CRMChat Translator - Popup Script
 
-const FIELDS = ['apiKey', 'targetLanguage', 'outboundLanguage'];
+const FIELDS = ['targetLanguage', 'outboundLanguage'];
 const TOGGLES = ['enabled', 'autoTranslateInbound'];
 
 const statusEl = document.getElementById('status');
@@ -55,10 +55,4 @@ for (const field of FIELDS) {
 for (const toggle of TOGGLES) {
   const el = document.getElementById(toggle);
   if (el) el.addEventListener('change', saveSettings);
-}
-
-// Save API key on blur too (for typing)
-const apiKeyEl = document.getElementById('apiKey');
-if (apiKeyEl) {
-  apiKeyEl.addEventListener('blur', saveSettings);
 }

@@ -39,7 +39,7 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    input[type="text"]:focus, select:focus {
+    input[type="text"], select:focus {
       border-color: #3390ec;
     }
     .toggle-row {
@@ -101,16 +101,6 @@
     }
     .status.error { color: #e53935; }
     .status.success { color: #43a047; }
-    .api-help {
-      font-size: 11px;
-      color: #999;
-      margin-top: 4px;
-    }
-    .api-help a {
-      color: #3390ec;
-      text-decoration: none;
-    }
-    .api-help a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -136,14 +126,6 @@
   </div>
 
   <div class="divider"></div>
-
-  <div class="field">
-    <label>Google Cloud Translation API Key</label>
-    <input type="text" id="apiKey" placeholder="Enter your API key">
-    <div class="api-help">
-      Get a key from <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>
-    </div>
-  </div>
 
   <div class="field">
     <label>Translate incoming messages to</label>
