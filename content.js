@@ -217,7 +217,7 @@
 
       if (result.error) {
         console.warn('[CRMChat Translate] Outbound translation error:', result.error);
-        showToast('Translation failed. Check your API key and try again.');
+        showToast('Translation failed. Please try again later.');
         return;
       }
 

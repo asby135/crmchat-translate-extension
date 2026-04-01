@@ -43,8 +43,8 @@ export default {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        const msg = err?.error?.message || `Google API error: ${response.status}`;
-        return jsonResponse({ error: msg }, response.status, origin);
+        console.error('Google API error:', err?.error?.message || response.status);
+        return jsonResponse({ error: 'Translation service error' }, response.status, origin);
       }
 
       const data = await response.json();
