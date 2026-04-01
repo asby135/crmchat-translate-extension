@@ -1,7 +1,7 @@
 // CRMChat Translator - Service Worker (Background)
 // Routes translation requests through the Cloudflare Worker proxy
 
-const TRANSLATE_API = 'https://crmchat-translate.PLACEHOLDER.workers.dev/translate';
+const TRANSLATE_API = 'https://crmchat-translate.crmchat-translate.workers.dev/translate';
 
 // Default settings (no API key needed — proxy handles it)
 const DEFAULT_SETTINGS = {

@@ -7,7 +7,7 @@
   "host_permissions": [
     "https://app.crmchat.ai/*",
     "https://tg-client.crmchat.ai/*",
-    "https://crmchat-translate.PLACEHOLDER.workers.dev/*"
+    "https://crmchat-translate.crmchat-translate.workers.dev/*"
   ],
   "content_scripts": [
     {
