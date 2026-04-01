@@ -19,7 +19,6 @@
 
   // ── State ──────────────────────────────────────────────────
   let settings = {
-    apiKey: '',
     targetLanguage: 'en',
     outboundLanguage: 'ru',
     autoTranslateInbound: true,
@@ -78,11 +77,29 @@
       }
     });
 
-    // Observe the entire body for new messages (covers scrolling, new messages, chat switches)
-    observer.observe(document.body, {
+    // Scope to MessageList for performance; fall back to body for chat switches
+    const messageList = document.querySelector(SEL.messageList);
+    const target = messageList || document.body;
+    observer.observe(target, {
       childList: true,
       subtree: true,
     });
+
+    // If scoped to a MessageList, also watch body for chat switches that replace the list
+    if (messageList) {
+      const chatSwitchObserver = new MutationObserver(() => {
+        const newList = document.querySelector(SEL.messageList);
+        if (newList && newList !== messageList) {
+          observer.disconnect();
+          chatSwitchObserver.disconnect();
+          observeMessages(); // Re-attach to the new MessageList
+          if (settings.autoTranslateInbound && settings.enabled) {
+            translateVisibleMessages();
+          }
+        }
+      });
+      chatSwitchObserver.observe(document.body, { childList: true, subtree: true });
+    }
   }
 
   function translateVisibleMessages() {
@@ -104,12 +121,6 @@
 
     if (!originalText || originalText.length < 2) return;
 
-    // Skip if text appears to already be in the target language
-    // Simple heuristic: if mostly Latin characters, likely English
-    const isLatin = /^[\x00-\x7F\s.,!?;:'"()\-–—…]+$/.test(originalText);
-    if (settings.targetLanguage === 'en' && isLatin) return;
-    if (settings.targetLanguage === 'ru' && !isLatin) return;
-
     try {
       const result = await chrome.runtime.sendMessage({
         type: 'translate',
@@ -121,6 +132,9 @@
         console.warn('[CRMChat Translate] Translation error:', result.error);
         return;
       }
+
+      // Skip if the detected source language matches the target (already in the right language)
+      if (result.detectedLanguage === settings.targetLanguage) return;
 
       if (!result.translatedText || result.translatedText === originalText) return;
 
@@ -202,7 +216,8 @@
       });
 
       if (result.error) {
-        showToast(`Translation failed: ${result.error}`);
+        console.warn('[CRMChat Translate] Outbound translation error:', result.error);
+        showToast('Translation failed. Check your API key and try again.');
         return;
       }
 
@@ -215,7 +230,8 @@
       replaceComposerText(composer, result.translatedText);
 
     } catch (e) {
-      showToast(`Translation failed: ${e.message}`);
+      console.warn('[CRMChat Translate] Outbound translation error:', e.message);
+      showToast('Translation failed. Check your connection and try again.');
     } finally {
       translateButton.classList.remove('loading');
       translateButton.disabled = false;
