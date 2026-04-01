@@ -1,5 +1,6 @@
 // CRMChat Translator - Content Script
 // Injected into Telegram Web Client iframe on app.crmchat.ai
+// Handles outbound translation only (inbound handled by Telegram's built-in translation)
 
 (() => {
   // Avoid double injection
@@ -8,10 +9,6 @@
 
   // ── Selectors ──────────────────────────────────────────────
   const SEL = {
-    messageTextContent: '.text-content',
-    messageTextInner: '.text-content-inner',
-    messageWrapper: '.message-content-wrapper',
-    messageList: '.MessageList',
     composer: '#editable-message-text',
     composerWrapper: '.message-input-wrapper',
     mainButton: '.main-button',
@@ -19,13 +16,10 @@
 
   // ── State ──────────────────────────────────────────────────
   let settings = {
-    targetLanguage: 'en',
     outboundLanguage: 'ru',
-    autoTranslateInbound: true,
     enabled: true,
   };
 
-  const translatedMessages = new WeakSet();
   let translateButton = null;
 
   // ── Init ───────────────────────────────────────────────────
@@ -38,116 +32,10 @@
       console.warn('[CRMChat Translate] Could not load settings:', e.message);
     }
 
-    // Wait for DOM to be ready with message list
-    await waitForElement(SEL.messageList, 15000);
-
-    // Start observing messages
-    observeMessages();
-
     // Set up composer translate button
     setupComposerButton();
 
-    // Translate existing visible messages
-    if (settings.autoTranslateInbound && settings.enabled) {
-      translateVisibleMessages();
-    }
-
     console.info('[CRMChat Translate] Initialized');
-  }
-
-  // ── Inbound Translation ────────────────────────────────────
-
-  function observeMessages() {
-    const observer = new MutationObserver((mutations) => {
-      if (!settings.enabled || !settings.autoTranslateInbound) return;
-
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (!(node instanceof HTMLElement)) continue;
-
-          // Check if the added node contains message text
-          const textElements = node.matches?.(SEL.messageTextContent)
-            ? [node]
-            : Array.from(node.querySelectorAll(SEL.messageTextContent));
-
-          for (const textEl of textElements) {
-            translateMessageElement(textEl);
-          }
-        }
-      }
-    });
-
-    // Scope to MessageList for performance; fall back to body for chat switches
-    const messageList = document.querySelector(SEL.messageList);
-    const target = messageList || document.body;
-    observer.observe(target, {
-      childList: true,
-      subtree: true,
-    });
-
-    // If scoped to a MessageList, also watch body for chat switches that replace the list
-    if (messageList) {
-      const chatSwitchObserver = new MutationObserver(() => {
-        const newList = document.querySelector(SEL.messageList);
-        if (newList && newList !== messageList) {
-          observer.disconnect();
-          chatSwitchObserver.disconnect();
-          observeMessages(); // Re-attach to the new MessageList
-          if (settings.autoTranslateInbound && settings.enabled) {
-            translateVisibleMessages();
-          }
-        }
-      });
-      chatSwitchObserver.observe(document.body, { childList: true, subtree: true });
-    }
-  }
-
-  function translateVisibleMessages() {
-    const messages = document.querySelectorAll(SEL.messageTextContent);
-    for (const msg of messages) {
-      translateMessageElement(msg);
-    }
-  }
-
-  async function translateMessageElement(element) {
-    if (translatedMessages.has(element)) return;
-    if (element.querySelector('.crm-translation')) return;
-    translatedMessages.add(element);
-
-    // Get the text content from the inner span or the element itself
-    const innerSpan = element.querySelector(SEL.messageTextInner);
-    const textSource = innerSpan || element;
-    const originalText = textSource.textContent?.trim();
-
-    if (!originalText || originalText.length < 2) return;
-
-    try {
-      const result = await chrome.runtime.sendMessage({
-        type: 'translate',
-        text: originalText,
-        direction: 'inbound',
-      });
-
-      if (result.error) {
-        console.warn('[CRMChat Translate] Translation error:', result.error);
-        return;
-      }
-
-      // Skip if the detected source language matches the target (already in the right language)
-      if (result.detectedLanguage === settings.targetLanguage) return;
-
-      if (!result.translatedText || result.translatedText === originalText) return;
-
-      // Inject translation below the original text
-      const translationEl = document.createElement('div');
-      translationEl.className = 'crm-translation';
-      translationEl.textContent = result.translatedText;
-      translationEl.title = 'Translated by CRMChat';
-
-      element.appendChild(translationEl);
-    } catch (e) {
-      console.warn('[CRMChat Translate] Failed to translate:', e.message);
-    }
   }
 
   // ── Outbound Translation ───────────────────────────────────
@@ -273,32 +161,6 @@
 
   // ── Utilities ──────────────────────────────────────────────
 
-  function waitForElement(selector, timeout = 10000) {
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector(selector);
-      if (existing) {
-        resolve(existing);
-        return;
-      }
-
-      const observer = new MutationObserver(() => {
-        const el = document.querySelector(selector);
-        if (el) {
-          observer.disconnect();
-          resolve(el);
-        }
-      });
-
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      setTimeout(() => {
-        observer.disconnect();
-        // Resolve anyway, the element might appear later
-        resolve(null);
-      }, timeout);
-    });
-  }
-
   function showToast(message) {
     const existing = document.querySelector('.crm-translate-toast');
     if (existing) existing.remove();
@@ -333,11 +195,6 @@
       // Update translate button tooltip
       if (translateButton) {
         translateButton.title = `Translate to ${getLanguageName(settings.outboundLanguage)}`;
-      }
-
-      // Re-translate visible messages if auto-translate was just enabled
-      if (settings.autoTranslateInbound && settings.enabled) {
-        translateVisibleMessages();
       }
     }
   });

@@ -1,7 +1,7 @@
 // CRMChat Translator - Popup Script
 
-const FIELDS = ['targetLanguage', 'outboundLanguage'];
-const TOGGLES = ['enabled', 'autoTranslateInbound'];
+const FIELDS = ['outboundLanguage'];
+const TOGGLES = ['enabled'];
 
 const statusEl = document.getElementById('status');
 
