@@ -1,0 +1,6 @@
+name = "crmchat-translate"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "chrome-extension://,https://app.crmchat.ai,https://tg-client.crmchat.ai"
